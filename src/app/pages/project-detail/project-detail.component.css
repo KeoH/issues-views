@@ -1,0 +1,383 @@
+/* PROJECT DETAIL VIEW LAYOUT */
+.project-detail-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .project-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* HEADER EXTENSIONS */
+.project-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.project-color-indicator {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* SETTINGS CARD (LEFT PANEL) */
+.project-settings-card {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.project-settings-card h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.settings-help {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-top: -1rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.btn-save-settings {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* STATS BOX IN LEFT PANEL */
+.settings-stats-box {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1.25rem;
+}
+
+.settings-stats-box h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stats-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.qs-label {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.qs-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* TASKS LIST (RIGHT PANEL) */
+.project-tasks-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tasks-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tasks-view-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+.days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* DAY GROUP CARD */
+.day-group-card {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.day-group-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.day-group-header h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.day-tasks-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+
+.btn-add-day-task {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #6366f1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.btn-add-day-task:hover {
+  color: #818cf8;
+  text-decoration: underline;
+}
+
+.day-tasks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* TASK ITEM ROW CARD */
+.project-task-item {
+  background: rgba(30, 41, 59, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-left: 4px solid transparent;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  transition: all 0.2s ease;
+}
+
+.project-task-item:hover {
+  transform: translateY(-2px);
+  background: rgba(30, 41, 59, 0.45);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.task-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.task-item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.task-item-time {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.task-item-duration {
+  color: #64748b;
+}
+
+.task-item-user-link {
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.task-item-user-link:hover {
+  transform: scale(1.05);
+}
+
+/* USER COLOR BADGES FOR ASSIGNEE */
+.task-item-user-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.task-item-user-badge.task-card-color-0 {
+  background: rgba(168, 85, 247, 0.18);
+  color: #e9d5ff;
+}
+
+.task-item-user-badge.task-card-color-1 {
+  background: rgba(14, 165, 233, 0.18);
+  color: #bae6fd;
+}
+
+.task-item-user-badge.task-card-color-2 {
+  background: rgba(236, 72, 153, 0.18);
+  color: #fbcfe8;
+}
+
+.task-item-user-badge.task-card-color-3 {
+  background: rgba(16, 185, 129, 0.18);
+  color: #a7f3d0;
+}
+
+.task-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.task-item-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.task-item-desc {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* COMPACT TIMELINE VISUAL INDICATOR */
+.compact-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 280px;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.compact-timeline-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  position: relative;
+  width: 100%;
+}
+
+.compact-timeline-fill {
+  height: 100%;
+  position: absolute;
+  border-radius: 3px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.compact-timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #64748b;
+  user-select: none;
+}
+
+/* DEPENDENCY CHIPS */
+.task-item-dependencies {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.dep-label {
+  color: #64748b;
+}
+
+.dep-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.dep-badge {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbcfe8;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* ACTION BUTTONS */
+.task-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon-sm {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+/* EMPTY DAYS PLACEHOLDER */
+.empty-day-tasks {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px dashed rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.empty-day-tasks p {
+  color: #475569;
+  font-size: 0.85rem;
+}

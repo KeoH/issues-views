@@ -1,0 +1,570 @@
+<div class="app-container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand-section">
+      <h1>Timeline Planner</h1>
+      <p>Prototipo MVP para gestión temporal de tareas</p>
+    </div>
+
+    <!-- Week Navigation Controls -->
+    <div class="week-navigation-container">
+      <button type="button" class="btn btn-secondary btn-icon" (click)="prevWeek()" title="Semana anterior">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <span class="current-week-label">{{ getFormattedWeekRange() }}</span>
+      <button type="button" class="btn btn-secondary" (click)="goToCurrentWeek()">Hoy</button>
+      <button type="button" class="btn btn-secondary btn-icon" (click)="nextWeek()" title="Semana siguiente">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="actions-section">
+      <!-- Active User Switcher -->
+      <div class="user-select-header">
+        <span class="user-select-label">Actuar como:</span>
+        <select class="select-header" [ngModel]="timelineService.currentUserId()" (ngModelChange)="timelineService.currentUserId.set($event)">
+          <option value="admin">Administrador</option>
+          @for (user of timelineService.users(); track user.id) {
+            <option [value]="user.id">{{ user.name }}</option>
+          }
+        </select>
+      </div>
+
+      @if (timelineService.currentUserId() !== 'admin') {
+        <button class="btn btn-secondary" routerLink="/mi-perfil">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Mi Perfil
+        </button>
+      }
+
+      <!-- Zoom Controls -->
+      <div class="zoom-group">
+        <button class="btn btn-secondary btn-icon" (click)="zoomOut()" title="Reducir escala (Zoom -)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button class="btn btn-secondary btn-zoom-reset" (click)="resetZoom()" title="Restablecer zoom a 100%">
+          {{ (zoomLevel() * 100).toFixed(0) }}%
+        </button>
+        <button class="btn btn-secondary btn-icon" (click)="zoomIn()" title="Ampliar escala (Zoom +)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      </div>
+
+      <button class="btn btn-secondary" (click)="resetToSeedData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        Restaurar Semilla
+      </button>
+      <button class="btn btn-secondary" (click)="openAddProjectModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Crear Proyecto
+      </button>
+      <button class="btn btn-secondary" (click)="openAddUserModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="8.5" cy="7" r="4"/>
+          <line x1="20" y1="8" x2="20" y2="14"/>
+          <line x1="17" y1="11" x2="23" y2="11"/>
+        </svg>
+        Crear Usuario
+      </button>
+      <button class="btn btn-primary" (click)="openAddTaskModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nueva Tarea
+      </button>
+    </div>
+  </header>
+
+  <!-- QUICK STATS -->
+  <section class="stats-bar">
+    <div class="stat-card">
+      <span class="stat-label">Miembros</span>
+      <span class="stat-value">{{ totalUsers() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Tareas Asignadas</span>
+      <span class="stat-value">{{ totalTasks() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Miembros Activos</span>
+      <span class="stat-value">{{ busyUsersCount() }} / {{ totalUsers() }}</span>
+    </div>
+  </section>
+
+  <!-- PROJECTS BAR -->
+  @if (timelineService.projects().length > 0) {
+    <section class="projects-bar">
+      <span class="projects-bar-title">Proyectos</span>
+      <div class="projects-list">
+        @for (project of timelineService.projects(); track project.id) {
+          <div class="project-tag" [style.borderLeftColor]="project.color">
+            <span class="project-tag-name" [routerLink]="['/proyecto', project.id]" [title]="project.description" style="cursor: pointer;">{{ project.name }}</span>
+            <button class="project-tag-delete" (click)="deleteProject(project.id, project.name, $event)" title="Eliminar proyecto y todas sus tareas asociadas">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- PLANNER BOARD -->
+  <main class="planner-board">
+    <div class="planner-scroll-container" (wheel)="onWheel($event)">
+      <div class="planner-grid" [style.minWidth]="'calc(1400px * ' + zoomLevel() + ')'" style="position: relative;">
+        
+        <!-- DEPENDENCY LINES OVERLAY SVG -->
+        <svg class="dependency-overlay"
+             [style.top.px]="81"
+             [style.left.px]="200"
+             [style.height.px]="userRowOffsets().totalHeight"
+             [style.width.px]="gridWidth()">
+          <defs>
+            <marker id="arrow-0" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a855f7" /></marker>
+            <marker id="arrow-1" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0ea5e9" /></marker>
+            <marker id="arrow-2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ec4899" /></marker>
+            <marker id="arrow-3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" /></marker>
+          </defs>
+          @for (line of dependencyLines(); track line.id) {
+            <path [attr.d]="line.path"
+                  fill="none"
+                  [attr.marker-end]="'url(#arrow-' + (line.colorClass.endsWith('0') ? '0' : line.colorClass.endsWith('1') ? '1' : line.colorClass.endsWith('2') ? '2' : '3') + ')'"
+                  class="dependency-path {{ line.colorClass }}">
+            </path>
+          }
+        </svg>
+
+        <!-- HEADER ROW -->
+        <div class="timeline-row">
+          <div class="corner-cell">Miembros</div>
+          <div class="header-timeline-wrapper">
+            <!-- DAYS HEADER (5 Days) -->
+            <div class="days-header" [style.gridTemplateColumns]="'repeat(' + days.length + ', minmax(0, 1fr))'">
+              @for (day of days; track day) {
+                <div class="day-header-cell">{{ day }}</div>
+              }
+            </div>
+            <!-- HOURS HEADER (40 Columns) -->
+            <div class="hours-header" [style.gridTemplateColumns]="'repeat(' + totalSlots() + ', minmax(0, 1fr))'">
+              @for (day of days; track dayIndex; let dayIndex = $index) {
+                @for (hour of hours; track hourIndex; let hourIndex = $index) {
+                  <div class="hour-header-cell" [class.day-boundary]="hourIndex === 7">
+                    {{ hour }}:00
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- USERS BODY ROWS -->
+        @for (user of timelineService.users(); track user.id) {
+          <div class="timeline-row user-row">
+            <!-- User Name cell -->
+            <div class="user-cell">
+              <div class="user-info">
+                <a [routerLink]="['/usuario', user.id]" class="user-link">
+                  <span class="user-name">{{ user.name }}</span>
+                </a>
+                <span class="user-tasks-count">
+                  {{ userLayouts().get(user.id)?.tasks?.length || 0 }} tareas ({{ getUserTotalHours(user.id) }}h)
+                </span>
+              </div>
+              <button class="delete-user-btn" (click)="deleteUser(user.id, user.name)" title="Eliminar usuario">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Timeline row grid & Tasks area -->
+            <div class="timeline-row-grid" 
+                 [style.minHeight.px]="userLayouts().get(user.id)?.height"
+                 (dragover)="onDragOver($event, user.id)"
+                 (dragleave)="onDragLeave($event)"
+                 (drop)="onDrop($event, user.id)">
+              
+              <!-- Clickable Grid Background Cells -->
+              <div class="grid-background" [style.gridTemplateColumns]="'repeat(' + totalSlots() + ', minmax(0, 1fr))'">
+                @for (day of days; track dayIndex; let dayIndex = $index) {
+                  @for (hour of hours; track hourIndex; let hourIndex = $index) {
+                    <div class="grid-cell-bg" 
+                         [class.day-boundary]="hourIndex === 7"
+                         (click)="onCellClick(user.id, dayIndex, hourIndex)">
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Drag Preview Box -->
+              @if (activeDragTarget()?.userId === user.id) {
+                <div class="drag-indicator-box"
+                     [style.left]="getDragIndicatorStyle().left"
+                     [style.width]="getDragIndicatorStyle().width">
+                </div>
+              }
+
+              <!-- User Tasks Cards -->
+              @for (task of userLayouts().get(user.id)?.tasks; track task.id) {
+                <div class="task-card"
+                     draggable="true"
+                     (dragstart)="onDragStart($event, task)"
+                     (dragend)="onDragEnd($event)"
+                     (click)="openEditTaskModal(task, $event)"
+                     (mouseenter)="onTaskMouseEnter($event, task)"
+                     (mousemove)="onTaskMouseMove($event)"
+                     (mouseleave)="onTaskMouseLeave()"
+                     [class]="getUserColorClass(user.id)"
+                     [class.has-project]="task.projectId"
+                     [style.left.%]="task.left"
+                     [style.width.%]="task.width"
+                     [style.top.px]="task.top"
+                     [style.borderBottomColor]="getProjectColor(task.projectId)">
+                  
+                  <div class="task-card-header">
+                    <span class="task-title" [title]="task.title">{{ task.title }}</span>
+                    <span class="task-status-badge status-{{ task.status.replace(' ', '-') }}">{{ task.status }}</span>
+                    <div class="task-card-actions">
+                      <button class="task-action-btn btn-delete-task" (click)="deleteTask(task.id, $event)" title="Eliminar tarea">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="task-details">
+                    <span class="task-desc" [title]="task.description">{{ task.description || 'Sin descripción' }}</span>
+                    <span class="task-time">{{ getFormattedTime(task.startDate, task.duration) }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @empty {
+          <!-- Empty State (No Users) -->
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <h3>No hay usuarios registrados</h3>
+            <p>Comienza creando un usuario para poder asignar y visualizar tareas en la línea temporal.</p>
+            <button class="btn btn-primary" (click)="openAddUserModal()">Crear Primer Usuario</button>
+          </div>
+        }
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: CREAR/EDITAR TAREA -->
+  <div class="modal-overlay" [class.active]="isTaskModalOpen()" (click)="$event.target === $event.currentTarget && closeTaskModal()">
+    <div class="modal-content modal-wide" [class.with-chat]="taskForm.id" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ taskModalTitle() }}</h2>
+        <button class="modal-close-btn" (click)="closeTaskModal()">&times;</button>
+      </div>
+      <form (ngSubmit)="submitTaskForm()">
+        <div class="task-form-grid" [class.with-chat]="taskForm.id">
+          <!-- LEFT COLUMN: main details and dependencies -->
+          <div class="form-column">
+            <div class="form-group">
+              <label for="task-title">Título de la Tarea</label>
+              <input type="text" id="task-title" name="title" [(ngModel)]="taskForm.title" placeholder="Ej. Implementar login" required autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="task-desc">Descripción Breve</label>
+              <textarea id="task-desc" name="description" [(ngModel)]="taskForm.description" placeholder="Añade detalles sobre el trabajo..." style="min-height: 100px;"></textarea>
+            </div>
+
+            <!-- Predecessors Autocomplete Search and Badges selection -->
+            <div class="form-group dependency-search-container">
+              <label for="dep-search">Predecesoras (Tareas que deben finalizar antes)</label>
+              
+              <!-- Search bar with focus / click events -->
+              <div class="autocomplete-search-wrapper">
+                <input type="text" 
+                       id="dep-search" 
+                       name="depSearch" 
+                       [ngModel]="depSearchQuery()" 
+                       (ngModelChange)="depSearchQuery.set($event)"
+                       (focus)="toggleDepDropdown(true)" 
+                       (blur)="toggleDepDropdown(false)"
+                       placeholder="Buscar tareas por título o miembro..." 
+                       autocomplete="off">
+                
+                <!-- Dropdown candidates list -->
+                @if (isDepDropdownOpen()) {
+                  <div class="autocomplete-dropdown">
+                    @for (cand of getFilteredPredecessors(); track cand.id) {
+                      <div class="autocomplete-dropdown-item" (mousedown)="addDependency(cand.id); $event.preventDefault()">
+                        <div class="dropdown-item-title">{{ cand.title }}</div>
+                        <div class="dropdown-item-meta">
+                          {{ getFormattedTimeShort(cand.startDate) }} · {{ getTaskUserName(cand.userId) }}
+                        </div>
+                      </div>
+                    } @empty {
+                      <div class="autocomplete-dropdown-no-results">No se encontraron tareas disponibles.</div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Selected Dependencies Badges (Chips) -->
+              <div class="dependency-badges-container">
+                @for (depId of taskForm.dependencies; track depId) {
+                  <div class="dependency-badge">
+                    <span class="badge-text" [title]="getTaskTitle(depId)">{{ getTaskTitle(depId) }}</span>
+                    <button type="button" class="badge-remove-btn" (click)="removeDependency(depId)" title="Eliminar dependencia">
+                      &times;
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: assignment and timing details -->
+          <div class="form-column">
+            <div class="form-group">
+              <label for="task-project">Proyecto</label>
+              <select id="task-project" name="projectId" [(ngModel)]="taskForm.projectId">
+                <option value="">Sin Proyecto</option>
+                @for (project of timelineService.projects(); track project.id) {
+                  <option [value]="project.id">{{ project.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="task-user">Asignar a</label>
+              <select id="task-user" name="userId" [(ngModel)]="taskForm.userId">
+                @for (user of timelineService.users(); track user.id) {
+                  <option [value]="user.id">{{ user.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="task-status">Estado</label>
+              <select id="task-status" name="status" [(ngModel)]="taskForm.status">
+                <option value="Creado">Creado</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Cancelado">Cancelado</option>
+                <option value="Terminado">Terminado</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="task-date">Fecha</label>
+                <input type="date" id="task-date" name="startDate" [(ngModel)]="taskForm.startDate" required>
+              </div>
+
+              <div class="form-group">
+                <label for="task-hour">Hora de Inicio</label>
+                <select id="task-hour" name="startHour" [(ngModel)]="taskForm.startHour">
+                  @for (hour of hours; track hour) {
+                    <option [value]="hour">{{ hour }}:00</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="task-duration">Duración (horas laborales)</label>
+              <select id="task-duration" name="duration" [(ngModel)]="taskForm.duration">
+                <option [value]="1">1 hora</option>
+                <option [value]="2">2 horas</option>
+                <option [value]="3">3 horas</option>
+                <option [value]="4">4 horas (Media jornada)</option>
+                <option [value]="5">5 horas</option>
+                <option [value]="6">6 horas</option>
+                <option [value]="7">7 horas</option>
+                <option [value]="8">8 horas (Jornada completa)</option>
+                <option [value]="12">12 horas (1.5 días)</option>
+                <option [value]="16">16 horas (2 días)</option>
+                <option [value]="24">24 horas (3 días)</option>
+              </select>
+            </div>
+
+            @if (!taskForm.id) {
+              <div class="form-group">
+                <label for="task-recurrence">Periodicidad (Repetir)</label>
+                <select id="task-recurrence" name="recurrence" [(ngModel)]="taskForm.recurrence">
+                  <option value="none">No repetir (Única)</option>
+                  <option value="24">Diaria (Cada 24h)</option>
+                  <option value="6">Cada 6 horas</option>
+                  <option value="12">Cada 12 horas</option>
+                </select>
+              </div>
+            }
+          </div>
+
+          <!-- COLUMN 3: CHAT/COMMENTS (Only when editing) -->
+          @if (taskForm.id) {
+            <div class="form-column task-chat-column">
+              <h3>Comentarios</h3>
+              
+              <!-- Messages container -->
+              <div class="chat-messages-container">
+                @for (comment of getTaskComments(); track comment.id) {
+                  <div class="chat-message" [class.own-message]="comment.userId === timelineService.currentUserId()">
+                    <div class="chat-message-meta">
+                      <span class="chat-message-author">{{ comment.userName }}</span>
+                      <span class="chat-message-time">{{ formatCommentTime(comment.createdAt) }}</span>
+                    </div>
+                    <div class="chat-message-text">{{ comment.text }}</div>
+                  </div>
+                } @empty {
+                  <div class="chat-empty-state">
+                    <p>No hay comentarios aún. ¡Escribe el primero!</p>
+                  </div>
+                }
+              </div>
+
+              <!-- Input form -->
+              <div class="chat-input-row">
+                <input type="text" 
+                       name="newCommentText" 
+                       [(ngModel)]="newCommentText" 
+                       placeholder="Escribe un comentario..." 
+                       autocomplete="off"
+                       (keydown.enter)="$event.preventDefault(); submitComment()">
+                <button type="button" class="btn btn-primary btn-send" (click)="submitComment()">
+                  Enviar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeTaskModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!taskForm.title.trim()">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR USUARIO -->
+  <div class="modal-overlay" [class.active]="isUserModalOpen()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Crear Nuevo Usuario</h2>
+        <button class="modal-close-btn" (click)="closeUserModal()">&times;</button>
+      </div>
+      <form (ngSubmit)="submitUserForm()">
+        <div class="form-group">
+          <label for="user-name">Nombre de la Persona</label>
+          <input type="text" id="user-name" name="name" [(ngModel)]="userForm.name" placeholder="Ej. Carlos Delgado" required autocomplete="off">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeUserModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!userForm.name.trim()">Crear Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FLOATING DYNAMIC TOOLTIP -->
+  @if (hoveredTask(); as task) {
+    <div class="custom-tooltip" 
+         [style.left.px]="tooltipX()" 
+         [style.top.px]="tooltipY()">
+      <div class="tooltip-title">{{ task.title }}</div>
+      <div class="tooltip-body">
+        <div class="tooltip-item">
+          <span class="tooltip-label">Asignado:</span>
+          <span class="tooltip-val">{{ getTaskUserName(task.userId) }}</span>
+        </div>
+        <div class="tooltip-item">
+          <span class="tooltip-label">Horario:</span>
+          <span class="tooltip-val">{{ getFormattedTime(task.startDate, task.duration) }}</span>
+        </div>
+        <div class="tooltip-item">
+          <span class="tooltip-label">Duración:</span>
+          <span class="tooltip-val">{{ task.duration }} {{ task.duration === 1 ? 'hora' : 'horas' }}</span>
+        </div>
+        @if (task.projectId) {
+          <div class="tooltip-divider"></div>
+          <div class="tooltip-item">
+            <span class="tooltip-label">Proyecto:</span>
+            <span class="tooltip-val" [style.color]="getProjectColor(task.projectId)">{{ getProjectName(task.projectId) }}</span>
+          </div>
+        }
+        @if (task.description) {
+          <div class="tooltip-divider"></div>
+          <div class="tooltip-desc">{{ task.description }}</div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: CREAR PROYECTO -->
+  <div class="modal-overlay" [class.active]="isProjectModalOpen()" (click)="$event.target === $event.currentTarget && closeProjectModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Crear Nuevo Proyecto</h2>
+        <button class="modal-close-btn" (click)="closeProjectModal()">&times;</button>
+      </div>
+      <form (ngSubmit)="submitProjectForm()">
+        <div class="form-group">
+          <label for="project-name">Nombre del Proyecto</label>
+          <input type="text" id="project-name" name="name" [(ngModel)]="projectForm.name" placeholder="Ej. Rediseño Web" required autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="project-desc">Descripción Breve</label>
+          <textarea id="project-desc" name="description" [(ngModel)]="projectForm.description" placeholder="Añade detalles sobre este proyecto..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Color del Proyecto</label>
+          <div class="color-picker-group">
+            @for (color of projectColors; track color) {
+              <div class="color-option"
+                   [style.backgroundColor]="color"
+                   [class.active]="projectForm.color === color"
+                   (click)="projectForm.color = color">
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeProjectModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!projectForm.name.trim()">Crear Proyecto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
