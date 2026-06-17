@@ -1,0 +1,21 @@
+<div class="task-card-header">
+  <span class="task-title" [title]="task().title">{{ task().title }}</span>
+  <span class="task-status-badge status-{{ task().status.replace(' ', '-') }}">{{ task().status | translate:translationService.currentLang() }}</span>
+  @if (showDelete()) {
+    <div class="task-card-actions">
+      <button class="task-action-btn btn-delete-task touch-target-expand" 
+              (click)="onDelete($event)" 
+              [title]="'Eliminar' | translate:translationService.currentLang()" 
+              [attr.aria-label]="'Eliminar tarea' | translate:translationService.currentLang()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  }
+</div>
+
+<div class="task-card-body">
+  <span class="task-time-range">{{ task().startDate.split('T')[1].substring(0, 5) }} ({{ task().duration }}h)</span>
+</div>

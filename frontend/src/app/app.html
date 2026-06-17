@@ -1,0 +1,159 @@
+@if (authService.isLoggedIn()) {
+  <div class="app-layout" [class.sidebar-collapsed]="uiService.isSidebarCollapsed()">
+    <!-- Mobile Sidebar Backdrop -->
+    <div class="sidebar-backdrop" (click)="uiService.toggleSidebar()" aria-hidden="true"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button class="btn-toggle-sidebar" (click)="uiService.toggleSidebar()" [attr.aria-label]="(uiService.isSidebarCollapsed() ? 'Desplegar menú lateral' : 'Plegar menú lateral') | translate:translationService.currentLang()">
+          @if (uiService.isSidebarCollapsed()) {
+            ➡️
+          } @else {
+            ⬅️
+          }
+        </button>
+        @if (!uiService.isSidebarCollapsed()) {
+          <span class="sidebar-logo-text">Planner</span>
+        }
+      </div>
+
+      <!-- User Info Card -->
+      <div class="sidebar-user-card" [class.collapsed]="uiService.isSidebarCollapsed()">
+        <div class="user-avatar" role="img" aria-label="Avatar de usuario">👤</div>
+        @if (!uiService.isSidebarCollapsed()) {
+          <div class="user-details">
+            <span class="user-name">{{ authService.currentUser()?.name }}</span>
+            <span class="user-role">{{ (authService.currentUser()?.role === 'admin' ? 'Administrador' : 'Colaborador') | translate:translationService.currentLang() }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item" [title]="uiService.isSidebarCollapsed() ? ('Timeline' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Timeline' | translate:translationService.currentLang()">
+          <span class="nav-icon" aria-hidden="true">📅</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="nav-label">{{ 'Timeline' | translate:translationService.currentLang() }}</span>
+          }
+        </a>
+        <a routerLink="/mi-planificacion" routerLinkActive="active" class="nav-item" [title]="uiService.isSidebarCollapsed() ? ('Mi Planificación' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Mi Planificación' | translate:translationService.currentLang()">
+          <span class="nav-icon" aria-hidden="true">📊</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="nav-label">{{ 'Mi Planificación' | translate:translationService.currentLang() }}</span>
+          }
+        </a>
+        <a routerLink="/kanban" routerLinkActive="active" class="nav-item" [title]="uiService.isSidebarCollapsed() ? ('Kanban' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Kanban' | translate:translationService.currentLang()">
+          <span class="nav-icon" aria-hidden="true">📋</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="nav-label">{{ 'Kanban' | translate:translationService.currentLang() }}</span>
+          }
+        </a>
+        <a routerLink="/mi-perfil" routerLinkActive="active" class="nav-item" [title]="uiService.isSidebarCollapsed() ? ('Mi Perfil' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Mi Perfil' | translate:translationService.currentLang()">
+          <span class="nav-icon" aria-hidden="true">👤</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="nav-label">{{ 'Mi Perfil' | translate:translationService.currentLang() }}</span>
+          }
+        </a>
+        @if (authService.isAdmin()) {
+          <a routerLink="/usuarios" routerLinkActive="active" class="nav-item" [title]="uiService.isSidebarCollapsed() ? ('Gestión de Usuarios' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Gestión de Usuarios' | translate:translationService.currentLang()">
+            <span class="nav-icon" aria-hidden="true">👥</span>
+            @if (!uiService.isSidebarCollapsed()) {
+              <span class="nav-label">{{ 'Gestión de Usuarios' | translate:translationService.currentLang() }}</span>
+            }
+          </a>
+        }
+
+        <!-- Projects Sub-list in Nav -->
+        @if (sidebarProjects().length > 0) {
+          <div class="sidebar-section-divider"></div>
+          @if (!uiService.isSidebarCollapsed()) {
+            <div class="sidebar-section-title">{{ 'Proyectos' | translate:translationService.currentLang() }}</div>
+          }
+          <div class="projects-nav-list">
+            @for (project of sidebarProjects(); track project.id) {
+              <a [routerLink]="['/proyecto', project.id]" routerLinkActive="active" class="nav-item project-nav-item" [title]="uiService.isSidebarCollapsed() ? project.name : ''" [attr.aria-label]="project.name">
+                <span class="project-dot" [style.backgroundColor]="project.color" aria-hidden="true"></span>
+                @if (!uiService.isSidebarCollapsed()) {
+                  <span class="nav-label">{{ project.name }}</span>
+                }
+              </a>
+            }
+          </div>
+        }
+      </nav>
+
+      <!-- Quick Actions (Creation triggers) -->
+      <div class="sidebar-actions" [class.collapsed]="uiService.isSidebarCollapsed()">
+        @if (!uiService.isSidebarCollapsed()) {
+          <span class="actions-header">{{ 'Crear Nuevo' | translate:translationService.currentLang() }}</span>
+        }
+        
+        <button class="btn-action" (click)="onCreateTask()" [title]="uiService.isSidebarCollapsed() ? ('Crear Tarea' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Crear Tarea' | translate:translationService.currentLang()">
+          <span class="action-icon" aria-hidden="true">➕</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="action-label">{{ 'Crear Tarea' | translate:translationService.currentLang() }}</span>
+          }
+        </button>
+        <button class="btn-action" (click)="onCreateProject()" [title]="uiService.isSidebarCollapsed() ? ('Crear Proyecto' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Crear Proyecto' | translate:translationService.currentLang()">
+          <span class="action-icon" aria-hidden="true">📁</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="action-label">{{ 'Crear Proyecto' | translate:translationService.currentLang() }}</span>
+          }
+        </button>
+        <!-- Solo admin puede crear usuarios -->
+        @if (authService.isAdmin()) {
+          <button class="btn-action" (click)="onCreateUser()" [title]="uiService.isSidebarCollapsed() ? ('Crear Usuario' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Crear Usuario' | translate:translationService.currentLang()">
+            <span class="action-icon" aria-hidden="true">👥</span>
+            @if (!uiService.isSidebarCollapsed()) {
+              <span class="action-label">{{ 'Crear Usuario' | translate:translationService.currentLang() }}</span>
+            }
+          </button>
+        }
+      </div>
+
+      <!-- Logout Button -->
+      <div class="sidebar-footer">
+        <button class="btn-logout" (click)="authService.logout()" [title]="uiService.isSidebarCollapsed() ? ('Cerrar Sesión' | translate:translationService.currentLang()) : ''" [attr.aria-label]="'Cerrar Sesión' | translate:translationService.currentLang()">
+          <span class="logout-icon" aria-hidden="true">🚪</span>
+          @if (!uiService.isSidebarCollapsed()) {
+            <span class="logout-label">{{ 'Cerrar Sesión' | translate:translationService.currentLang() }}</span>
+          }
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <div class="content-wrapper">
+      <header class="mobile-header">
+        <button class="btn-hamburger touch-target-expand" (click)="uiService.toggleSidebar()" [attr.aria-label]="'Menú' | translate:translationService.currentLang()">
+          ☰
+        </button>
+        <span class="mobile-brand-title">Planner</span>
+      </header>
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+} @else {
+  <!-- Login Screen -->
+  <router-outlet></router-outlet>
+}
+
+<!-- Toast Notification Container -->
+<div class="toast-container" role="status" aria-live="polite">
+  @for (n of uiService.notifications(); track n.id) {
+    <div class="toast-item" [class]="'toast-' + n.type">
+      <span class="toast-icon" aria-hidden="true">
+        @if (n.type === 'success') { 🟢 }
+        @else if (n.type === 'error') { 🔴 }
+        @else if (n.type === 'warning') { ⚠️ }
+        @else { ℹ️ }
+      </span>
+      <span class="toast-message">{{ n.message }}</span>
+      <button class="toast-close touch-target-expand" (click)="uiService.notifications.update(list => list.filter(item => item.id !== n.id))" [attr.aria-label]="'Cerrar notificación' | translate:translationService.currentLang()">&times;</button>
+    </div>
+  }
+</div>
+
+<!-- Custom Accessible Confirmation Modal -->
+<app-confirm-dialog></app-confirm-dialog>

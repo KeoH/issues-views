@@ -1,0 +1,166 @@
+<div class="app-container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand-section">
+      <h1>{{ 'Gestión de Usuarios' | translate:translationService.currentLang() }}</h1>
+      <p>{{ 'Administra los usuarios del sistema, sus roles, contraseñas y estado de actividad.' | translate:translationService.currentLang() }}</p>
+    </div>
+    <div class="actions-section">
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <span>👥</span> {{ 'Nuevo Usuario' | translate:translationService.currentLang() }}
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTROLS ROW -->
+  <div class="user-management-controls">
+    <div class="search-box-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" 
+             [ngModel]="searchQuery()" 
+             (ngModelChange)="searchQuery.set($event)"
+             [placeholder]="'Buscar usuario por nombre o correo electrónico...' | translate:translationService.currentLang()" 
+             class="search-input">
+    </div>
+  </div>
+
+  <!-- USERS LIST TABLE -->
+  <div class="users-table-card">
+    <div class="table-responsive">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>{{ 'Usuario' | translate:translationService.currentLang() }}</th>
+            <th>{{ 'Correo Electrónico' | translate:translationService.currentLang() }}</th>
+            <th>{{ 'Rol' | translate:translationService.currentLang() }}</th>
+            <th>{{ 'Puesto' | translate:translationService.currentLang() }}</th>
+            <th>{{ 'Estado' | translate:translationService.currentLang() }}</th>
+            <th class="actions-column">{{ 'Acciones' | translate:translationService.currentLang() }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (filteredUsers().length === 0) {
+            <tr>
+              <td colspan="6" class="empty-table-notice">
+                {{ 'No se encontraron usuarios que coincidan con la búsqueda.' | translate:translationService.currentLang() }}
+              </td>
+            </tr>
+          } @else {
+            @for (usr of filteredUsers(); track usr.id) {
+              <tr class="user-row" [class.user-inactive]="usr.isActive === 0" [routerLink]="['/usuario', usr.id]">
+                <td>
+                  <div class="user-info-cell">
+                    <div class="user-avatar-circle">
+                      {{ getUserInitials(usr.name) }}
+                    </div>
+                    <div class="user-name-wrapper">
+                      <span class="user-name-text">{{ usr.name }}</span>
+                      @if (usr.id === authService.currentUser()?.id) {
+                        <span class="current-user-badge">({{ 'Tú' | translate:translationService.currentLang() }})</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="user-email-text">{{ usr.email }}</span>
+                </td>
+                <td>
+                  <span class="role-badge" [class.role-admin]="usr.role === 'admin'" [class.role-user]="usr.role !== 'admin'">
+                    {{ (usr.role === 'admin' ? 'Administrador' : 'Colaborador') | translate:translationService.currentLang() }}
+                  </span>
+                </td>
+                <td>
+                  <span class="user-job-text">{{ usr.jobTitle || ('No especificado' | translate:translationService.currentLang()) }}</span>
+                </td>
+                <td>
+                  <label class="switch-toggle" (click)="$event.stopPropagation()">
+                    <input type="checkbox" [checked]="usr.isActive !== 0" (change)="toggleUserStatus(usr, $event)">
+                    <span class="slider-round"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="user-actions-cell" (click)="$event.stopPropagation()">
+                    <button class="btn btn-secondary btn-icon-sm touch-target-expand" (click)="openEditModal(usr)" [title]="'Editar usuario' | translate:translationService.currentLang()">
+                      ✏️
+                    </button>
+                    @if (usr.id !== authService.currentUser()?.id) {
+                      <button class="btn btn-danger btn-icon-sm touch-target-expand" (click)="deleteUser(usr, $event)" [title]="'Eliminar usuario' | translate:translationService.currentLang()">
+                        🗑️
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CREATION & EDITION MODAL -->
+  <app-modal [title]="(editingUser() ? 'Editar Usuario' : 'Nuevo Usuario') | translate:translationService.currentLang()"
+             [isOpen]="isModalOpen()"
+             size="wide"
+             (close)="closeModal()">
+    <form (ngSubmit)="onSubmit()" class="user-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-name">{{ 'Nombre Completo' | translate:translationService.currentLang() }} *</label>
+              <input type="text" id="form-name" name="name" [(ngModel)]="userForm.name" required autocomplete="off" placeholder="Ej. Ana Gómez">
+            </div>
+            <div class="form-group">
+              <label for="form-email">{{ 'Correo Electrónico' | translate:translationService.currentLang() }} *</label>
+              <input type="email" id="form-email" name="email" [(ngModel)]="userForm.email" required autocomplete="off" placeholder="ejemplo@empresa.com">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-job">{{ 'Puesto / Cargo' | translate:translationService.currentLang() }}</label>
+              <input type="text" id="form-job" name="jobTitle" [(ngModel)]="userForm.jobTitle" autocomplete="off" placeholder="Ej. Desarrollador Frontend">
+            </div>
+            <div class="form-group">
+              <label for="form-birth">{{ 'Fecha de Nacimiento' | translate:translationService.currentLang() }}</label>
+              <input type="date" id="form-birth" name="birthDate" [(ngModel)]="userForm.birthDate">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-role">{{ 'Rol del Usuario' | translate:translationService.currentLang() }}</label>
+              <select id="form-role" name="role" [(ngModel)]="userForm.role">
+                <option value="user">{{ 'Colaborador (Acceso Estándar)' | translate:translationService.currentLang() }}</option>
+                <option value="admin">{{ 'Administrador (Acceso Completo)' | translate:translationService.currentLang() }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="form-status">{{ 'Estado inicial' | translate:translationService.currentLang() }}</label>
+              <select id="form-status" name="isActive" [(ngModel)]="userForm.isActive">
+                <option [value]="1">🟢 {{ 'Activo (Permitir acceso)' | translate:translationService.currentLang() }}</option>
+                <option [value]="0">🔴 {{ 'Inactivo (Bloquear acceso)' | translate:translationService.currentLang() }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="form-password">
+              {{ (editingUser() ? 'Cambiar Contraseña' : 'Contraseña') | translate:translationService.currentLang() }} {{ !editingUser() ? '*' : '' }}
+            </label>
+            <input type="password" id="form-password" name="password" [(ngModel)]="userForm.password" autocomplete="new-password" [placeholder]="'Contraseña de acceso' | translate:translationService.currentLang()">
+            @if (editingUser()) {
+              <small class="form-hint">{{ 'Dejar en blanco si no se desea cambiar la contraseña actual del usuario.' | translate:translationService.currentLang() }}</small>
+            } @else {
+              <small class="form-hint">{{ 'Mínimo 6 caracteres.' | translate:translationService.currentLang() }}</small>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">{{ 'Cancelar' | translate:translationService.currentLang() }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!userForm.name.trim() || !userForm.email.trim() || (!editingUser() && !userForm.password.trim())">
+              {{ (editingUser() ? 'Guardar Cambios' : 'Crear Usuario') | translate:translationService.currentLang() }}
+            </button>
+          </div>
+        </form>
+  </app-modal>
+</div>

@@ -1,30 +1,14 @@
 {
-  "name": "timeline-mvp",
-  "version": "0.0.0",
-  "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test"
-  },
+  "name": "timeline-scheduler-monorepo",
+  "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@11.7.0",
-  "dependencies": {
-    "@angular/common": "^21.2.0",
-    "@angular/compiler": "^21.2.0",
-    "@angular/core": "^21.2.0",
-    "@angular/forms": "^21.2.0",
-    "@angular/platform-browser": "^21.2.0",
-    "@angular/router": "^21.2.0",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
-  },
-  "devDependencies": {
-    "@angular/build": "^21.2.15",
-    "@angular/cli": "^21.2.15",
-    "@angular/compiler-cli": "^21.2.0",
-    "prettier": "^3.8.1",
-    "typescript": "~5.9.2"
+  "scripts": {
+    "frontend:dev": "pnpm --filter frontend start",
+    "frontend:build": "pnpm --filter frontend build",
+    "backend:dev": "pnpm --filter backend dev",
+    "backend:deploy": "pnpm --filter backend deploy",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:generate": "pnpm --filter backend db:generate"
   }
 }

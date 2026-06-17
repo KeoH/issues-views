@@ -1,0 +1,123 @@
+<div class="app-container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand-section">
+      <h1>{{ 'Mi Planificación' | translate:translationService.currentLang() }}</h1>
+      <p>{{ 'Vista temporal de tareas organizadas por proyectos' | translate:translationService.currentLang() }}</p>
+    </div>
+
+    <!-- Right Controls: Zoom & Calendars -->
+    <div class="actions-section">
+      <!-- Zoom Controls -->
+      <app-zoom-controls [(zoom)]="zoomLevel"></app-zoom-controls>
+    </div>
+  </header>
+
+  <!-- SELECT MEMBER BAR (Admin only) -->
+  @if (authService.isAdmin()) {
+    <section class="member-selector-bar" style="background: rgba(30, 41, 59, 0.2); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.04); padding: 1rem 1.5rem; border-radius: 14px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+      <label for="user-select" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8;">{{ 'Planificación del Miembro:' | translate:translationService.currentLang() }}</label>
+      <select id="user-select" [ngModel]="selectedUserId()" (ngModelChange)="selectedUserId.set($event)" style="background: #0c0d12; border: 1px solid rgba(255, 255, 255, 0.08); color: #cbd5e1; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; cursor: pointer; min-width: 200px;">
+        @for (user of activeUsers(); track user.id) {
+          <option [value]="user.id">{{ user.name }} ({{ user.jobTitle }})</option>
+        }
+      </select>
+    </section>
+  }
+
+  <!-- PLANNER BOARD -->
+  <main class="planner-board">
+    <div class="planner-board-header">
+      <!-- Week Navigation Controls -->
+      <app-week-navigation [(monday)]="currentWeekMonday"></app-week-navigation>
+    </div>
+
+    <!-- Scrollable Grid Wrapper -->
+    <div class="planner-scroll-container" (wheel)="onWheel($event)">
+      <div class="planner-grid" [style.minWidth]="'calc(1400px * ' + zoomLevel() + ')'" style="position: relative;">
+        
+        <!-- HEADER ROW (Days & Hours) -->
+        <div class="timeline-row">
+          <div class="corner-cell">{{ 'Proyectos' | translate:translationService.currentLang() }}</div>
+          <div class="header-timeline-wrapper">
+            <!-- DAYS HEADER (5 Days) -->
+            <div class="days-header" [style.gridTemplateColumns]="'repeat(' + days.length + ', minmax(0, 1fr))'">
+              @for (day of days; track dayIndex; let dayIndex = $index) {
+                <div class="day-header-cell" [class]="getDayStatusClass(dayIndex)">{{ day | translate:translationService.currentLang() }}</div>
+              }
+            </div>
+            <!-- HOURS HEADER (40 Columns) -->
+            <div class="hours-header" [style.gridTemplateColumns]="'repeat(' + totalSlots() + ', minmax(0, 1fr))'">
+              @for (day of days; track dayIndex; let dayIndex = $index) {
+                @for (hour of hours; track hourIndex; let hourIndex = $index) {
+                  <div class="hour-header-cell" [class.day-boundary]="hourIndex === 7" [class]="getDayStatusClass(dayIndex)">
+                    {{ hour }}:00
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- PROJECTS GRID BODY ROWS -->
+        @for (rowId of [
+          ...planningProjects().map(p => p.id),
+          'no-project'
+        ]; track rowId) {
+          <div class="timeline-row project-row">
+            <!-- Project Identifier Cell (Y-Axis) -->
+            <div class="user-cell">
+              <div class="project-info-block" style="border-left: 4px solid; padding-left: 0.5rem;" [style.borderLeftColor]="getProjectColor(rowId)">
+                <span class="project-row-name" style="color: #ffffff; font-weight: 600; font-size: 0.9rem;" [title]="getProjectName(rowId) | translate:translationService.currentLang()">
+                  {{ getProjectName(rowId) | translate:translationService.currentLang() }}
+                </span>
+                <span class="project-row-status" style="font-size: 0.725rem; color: #64748b; margin-top: 0.15rem;">
+                  {{ getProjectStatusLabel(rowId) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Drag & Drop Timeline Lanes -->
+            <div class="timeline-row-grid"
+                 [style.minHeight.px]="projectLayouts().get(rowId)?.height"
+                 (dragover)="onDragOver($event, rowId)"
+                 (dragleave)="onDragLeave()"
+                 (drop)="onDrop($event, rowId)">
+              
+              <!-- Grid background slot cells (for clicks/visual alignments) -->
+              <div class="grid-background" [style.gridTemplateColumns]="'repeat(' + totalSlots() + ', minmax(0, 1fr))'">
+                @for (day of days; track dayIndex; let dayIndex = $index) {
+                  @for (hour of hours; track hourIndex; let hourIndex = $index) {
+                    <div class="grid-cell-bg" 
+                         [class.day-boundary]="hourIndex === 7"
+                         [class]="getDayStatusClass(dayIndex)">
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Drag Indicator Preview Box -->
+              @if (activeDragTarget()?.projectId === rowId) {
+                <div class="drag-indicator-box"
+                     [style.left]="getDragIndicatorStyle().left"
+                     [style.width]="getDragIndicatorStyle().width">
+                </div>
+              }
+
+              @for (task of projectLayouts().get(rowId)?.tasks; track task.id) {
+                <app-task-card [task]="task"
+                               (click)="openTaskDetail(task, $event)"
+                               draggable="true"
+                               (dragstart)="onDragStart($event, task)"
+                               (dragend)="onDragEnd($event)">
+                </app-task-card>
+              }
+
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+  </main>
+</div>

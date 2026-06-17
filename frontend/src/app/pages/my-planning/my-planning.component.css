@@ -1,0 +1,210 @@
+/* PLANNER BOARD CONTAINER */
+.planner-board {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.planner-scroll-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.planner-grid {
+  min-width: 1400px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TIMELINE HEADERS */
+.timeline-row {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+}
+
+.corner-cell {
+  background: rgba(30, 41, 59, 0.7);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: #94a3b8;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  overflow: hidden;
+}
+
+.header-timeline-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.days-header {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: rgba(30, 41, 59, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.day-header-cell {
+  text-align: center;
+  padding: 0.75rem 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.day-header-cell:last-child {
+  border-right: none;
+}
+
+.hours-header {
+  display: grid;
+  grid-template-columns: repeat(40, minmax(0, 1fr));
+  background: rgba(15, 23, 42, 0.5);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.hour-header-cell {
+  text-align: center;
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  user-select: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.hour-header-cell.day-boundary {
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* PROJECT ROW STYLING */
+.project-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.project-row:hover {
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+.user-cell {
+  background: rgba(30, 41, 59, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  overflow: hidden;
+}
+
+/* TIMELINE ROW GRID & BG */
+.timeline-row-grid {
+  position: relative;
+  width: 100%;
+}
+
+.grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(40, minmax(0, 1fr));
+}
+
+.grid-cell-bg {
+  border-right: 1px solid rgba(255, 255, 255, 0.02);
+  transition: background-color 0.15s ease;
+}
+
+.grid-cell-bg.day-boundary {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* DRAG PREVIEW ELEMENT */
+.drag-indicator-box {
+  position: absolute;
+  top: 8px;
+  height: 52px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 2px dashed #6366f1;
+  border-radius: 8px;
+  z-index: 5;
+  pointer-events: none;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+  100% { opacity: 0.6; }
+}
+
+
+
+.planner-board-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: rgba(10, 15, 30, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* DAY STATUSES COLOR ACCENTS */
+.day-header-cell.day-current {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8 !important;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 #6366f1;
+}
+
+.hour-header-cell.day-current {
+  background: rgba(99, 102, 241, 0.06);
+  color: #818cf8 !important;
+}
+
+.grid-cell-bg.day-current {
+  background-color: rgba(99, 102, 241, 0.02) !important;
+}
+
+.grid-cell-bg.day-current:hover {
+  background-color: rgba(99, 102, 241, 0.06) !important;
+}
+
+.day-header-cell.day-past {
+  color: #64748b !important;
+  background: rgba(15, 23, 42, 0.15);
+  font-weight: 500;
+}
+
+.hour-header-cell.day-past {
+  color: #475569 !important;
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.grid-cell-bg.day-past {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+.grid-cell-bg.day-past:hover {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+}

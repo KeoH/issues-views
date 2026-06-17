@@ -1,0 +1,442 @@
+<div class="app-container">
+  <!-- STATISTICS BAR -->
+  <section class="stats-bar">
+    <div class="stat-card">
+      <span class="stat-label">{{ 'Proyectos Activos' | translate:translationService.currentLang() }}</span>
+      <span class="stat-value">{{ activeProjectsCount() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">{{ 'Miembros Activos' | translate:translationService.currentLang() }}</span>
+      <span class="stat-value">{{ activeUsersCount() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">{{ 'Tareas Planificadas' | translate:translationService.currentLang() }}</span>
+      <span class="stat-value">{{ timelineService.tasks().length }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">{{ 'Carga Horaria Semanal' | translate:translationService.currentLang() }}</span>
+      <span class="stat-value">{{ totalPlannedHours() }}h</span>
+    </div>
+  </section>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="header">
+    <div class="brand-section">
+      <h1>{{ 'Planificador Temporal' | translate:translationService.currentLang() }}</h1>
+      <p>{{ 'Arrastra y organiza las tareas para planificar tu semana' | translate:translationService.currentLang() }}</p>
+    </div>
+
+    <!-- Right Controls: Zoom & Week Navigation -->
+    <div class="actions-section">
+      <!-- Zoom Controls -->
+      <app-zoom-controls [(zoom)]="zoomLevel"></app-zoom-controls>
+    </div>
+  </header>
+
+  <!-- PROJECTS SELECTOR BAR -->
+  @if (timelineService.projects().length > 0) {
+    <section class="projects-bar">
+      <span class="projects-bar-title">{{ 'Leyenda de Proyectos' | translate:translationService.currentLang() }}:</span>
+      <div class="projects-list">
+        @for (project of timelineService.projects(); track project.id) {
+          <a [routerLink]="['/proyecto', project.id]" 
+             class="project-tag"
+             [style.borderColor]="project.color"
+             [style.backgroundColor]="project.color + '10'"
+             [style.color]="project.color">
+            <span class="project-dot" [style.backgroundColor]="project.color"></span>
+            {{ project.name }}
+            @if (project.isActive === 0) {
+              <span class="inactive-label">({{ 'inactivo' | translate:translationService.currentLang() }})</span>
+            }
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- TIMELINE GRID BOARD -->
+  <main class="planner-board">
+    <div class="planner-board-header">
+      <!-- Week Navigation -->
+      <app-week-navigation [(monday)]="currentWeekMonday"></app-week-navigation>
+    </div>
+
+    <!-- Scrollable grid area -->
+    <div class="planner-scroll-container" (wheel)="onWheel($event)">
+      <div class="planner-grid" [style.minWidth]="'calc(1200px * ' + zoomLevel() + ')'" style="position: relative;">
+        
+        <!-- HEADER ROW: DAYS & HOURS -->
+        <div class="timeline-row">
+          <div class="corner-cell">{{ 'Miembros' | translate:translationService.currentLang() }}</div>
+          <div class="header-timeline-wrapper">
+            <!-- DAYS ROW -->
+            <div class="days-header" [style.gridTemplateColumns]="'repeat(' + days.length + ', minmax(0, 1fr))'">
+              @for (day of days; track dayIndex; let dayIndex = $index) {
+                <div class="day-header-cell" [class]="getDayStatusClass(dayIndex)">{{ day | translate:translationService.currentLang() }}</div>
+              }
+            </div>
+            <!-- HOURS ROW -->
+            <div class="hours-header" [style.gridTemplateColumns]="'repeat(' + totalSlots() + ', minmax(0, 1fr))'">
+              @for (day of days; track dayIndex; let dayIndex = $index) {
+                @for (hour of hours; track hourIndex; let hourIndex = $index) {
+                  <div class="hour-header-cell" [class.day-boundary]="hourIndex === 7" [class]="getDayStatusClass(dayIndex)">
+                    {{ hour }}:00
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- USERS BODY ROWS -->
+        @for (user of activeUsers(); track user.id) {
+          <div class="timeline-row user-row">
+            <!-- User Name cell -->
+            <div class="user-cell">
+              <div class="user-info">
+                <a [routerLink]="['/usuario', user.id]" class="user-link">
+                  <span class="user-name">{{ user.name }}</span>
+                </a>
+                <span class="user-tasks-count">
+                  {{ userLayouts().get(user.id)?.tasks?.length || 0 }} {{ (userLayouts().get(user.id)?.tasks?.length === 1 ? 'tarea' : 'tareas') | translate:translationService.currentLang() }} ({{ getUserTotalHours(user.id) }}h)
+                </span>
+              </div>
+            </div>
+
+            <!-- Timeline row grid & Tasks area -->
+            <div class="timeline-row-grid" 
+                 [class.drag-over-row]="activeDragTarget()?.userId === user.id"
+                 [style.minHeight.px]="userLayouts().get(user.id)?.height"
+                 (dragover)="onDragOver($event, user.id)"
+                 (dragleave)="onDragLeave($event)"
+                 (drop)="onDrop($event, user.id)">
+              
+              <!-- Clickable Grid Background Cells -->
+              <div class="grid-background" [style.gridTemplateColumns]="'repeat(' + totalSlots() + ', minmax(0, 1fr))'">
+                @for (day of days; track dayIndex; let dayIndex = $index) {
+                  @for (hour of hours; track hourIndex; let hourIndex = $index) {
+                    <div class="grid-cell-bg" 
+                         [class.day-boundary]="hourIndex === 7"
+                         [class]="getDayStatusClass(dayIndex)"
+                         (click)="onCellClick(user.id, dayIndex, hourIndex)">
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Drag Preview Box -->
+              @if (activeDragTarget()?.userId === user.id) {
+                <div class="drag-indicator-box"
+                     [style.left]="getDragIndicatorStyle().left"
+                     [style.width]="getDragIndicatorStyle().width">
+                </div>
+              }
+
+              <!-- User Tasks Cards -->
+              @for (task of userLayouts().get(user.id)?.tasks; track task.id) {
+                <app-task-card [task]="task"
+                               [showDelete]="true"
+                               [class]="getUserColorClass(user.id)"
+                               (click)="openTaskDetail(task, $event)"
+                               (mouseenter)="onTaskMouseEnter($event, task)"
+                               (mousemove)="onTaskMouseMove($event)"
+                               (mouseleave)="onTaskMouseLeave()"
+                               draggable="true"
+                               (dragstart)="onDragStart($event, task)"
+                               (dragend)="onDragEnd($event)"
+                               (delete)="deleteTask(task.id, $event)">
+                </app-task-card>
+              }
+
+              <!-- Visual arrows indicating task dependency lines (SVG overlay) -->
+              @if (userLayouts().get(user.id)?.tasks?.length) {
+                <svg class="dependency-svg-layer" 
+                     [style.width.px]="gridWidth()"
+                     [style.height.px]="userLayouts().get(user.id)?.height">
+                  <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#818cf8"/>
+                    </marker>
+                  </defs>
+                  
+                  @for (line of dependencyLines(); track line.id) {
+                    @if (line.userId === user.id) {
+                      <path [attr.d]="line.path" 
+                            fill="none" 
+                            stroke="#818cf8" 
+                            stroke-width="1.5" 
+                            stroke-dasharray="3,3"
+                            marker-end="url(#arrow)"/>
+                    }
+                  }
+                </svg>
+              }
+
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </main>
+
+  <!-- REUSABLE TASK MODAL (CREAR/EDITAR) -->
+  <app-modal [title]="taskModalTitle() | translate:translationService.currentLang()" 
+             [isOpen]="isTaskModalOpen()" 
+             [size]="taskForm.id ? 'extra-wide' : 'wide'"
+             (close)="closeTaskModal()">
+    <form (ngSubmit)="submitTaskForm()">
+          <div class="task-form-grid" [class.with-chat]="taskForm.id">
+            <!-- LEFT COLUMN: main details and dependencies -->
+            <div class="form-column">
+              <div class="form-group">
+                <label for="task-title">{{ 'Título de la Tarea' | translate:translationService.currentLang() }}</label>
+                <input type="text" id="task-title" name="title" [(ngModel)]="taskForm.title" placeholder="Ej. Implementar login" required autocomplete="off">
+              </div>
+
+              <div class="form-group">
+                <label for="task-desc">{{ 'Descripción' | translate:translationService.currentLang() }}</label>
+                <textarea id="task-desc" name="description" [(ngModel)]="taskForm.description" placeholder="{{ 'Añade detalles sobre el trabajo...' | translate:translationService.currentLang() }}" style="min-height: 100px;"></textarea>
+              </div>
+
+              <!-- Predecessors Autocomplete Search and Badges selection -->
+              <div class="form-group dependency-search-container">
+                <label for="dep-search">{{ 'Dependencias (Predecesoras)' | translate:translationService.currentLang() }}</label>
+                
+                <div class="autocomplete-search-wrapper">
+                  <input type="text" 
+                         id="dep-search" 
+                         name="depSearch" 
+                         [ngModel]="depSearchQuery()" 
+                         (ngModelChange)="depSearchQuery.set($event)"
+                         (focus)="toggleDepDropdown(true)" 
+                         (blur)="toggleDepDropdown(false)"
+                         placeholder="Buscar tareas por título o miembro..." 
+                         autocomplete="off">
+                  
+                  @if (isDepDropdownOpen()) {
+                    <div class="autocomplete-dropdown">
+                      @for (cand of getFilteredPredecessors(); track cand.id) {
+                        <div class="autocomplete-dropdown-item" (mousedown)="addDependency(cand.id); $event.preventDefault()">
+                          <div class="dropdown-item-title">{{ cand.title }}</div>
+                          <div class="dropdown-item-meta">
+                            {{ getFormattedTimeShort(cand.startDate) }} · {{ getTaskUserName(cand.userId) }}
+                          </div>
+                        </div>
+                      } @empty {
+                        <div class="autocomplete-dropdown-no-results">{{ 'No se encontraron tareas disponibles.' | translate:translationService.currentLang() }}</div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Selected Dependencies Badges (Chips) -->
+                <div class="dependency-badges-container">
+                  @for (depId of taskForm.dependencies; track depId) {
+                    <div class="dependency-badge">
+                      <span class="badge-text" [title]="getTaskTitle(depId)">{{ getTaskTitle(depId) }}</span>
+                      <button type="button" class="badge-remove-btn touch-target-expand" (click)="removeDependency(depId)" title="{{ 'Eliminar' | translate:translationService.currentLang() }}">
+                        &times;
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN: assignment and timing details -->
+            <div class="form-column">
+              <div class="form-group">
+                <label for="task-project">{{ 'Proyecto' | translate:translationService.currentLang() }}</label>
+                <select id="task-project" name="projectId" [(ngModel)]="taskForm.projectId">
+                  <option value="">{{ 'Sin Proyecto' | translate:translationService.currentLang() }}</option>
+                  @for (project of timelineService.projects(); track project.id) {
+                    <option [value]="project.id">{{ project.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="task-user">{{ 'Asignar a' | translate:translationService.currentLang() }}</label>
+                <select id="task-user" name="userId" [(ngModel)]="taskForm.userId">
+                  @for (user of timelineService.users(); track user.id) {
+                    <option [value]="user.id">{{ user.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="task-status">{{ 'Estado' | translate:translationService.currentLang() }}</label>
+                <select id="task-status" name="status" [(ngModel)]="taskForm.status">
+                  <option value="Created">{{ 'Created' | translate:translationService.currentLang() }}</option>
+                  <option value="In Progress">{{ 'In Progress' | translate:translationService.currentLang() }}</option>
+                  <option value="Cancelled">{{ 'Cancelled' | translate:translationService.currentLang() }}</option>
+                  <option value="Completed">{{ 'Completed' | translate:translationService.currentLang() }}</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="task-date">{{ 'Fecha de Inicio' | translate:translationService.currentLang() }}</label>
+                  <input type="date" id="task-date" name="startDate" [(ngModel)]="taskForm.startDate" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="task-hour">{{ 'Hora de Inicio' | translate:translationService.currentLang() }}</label>
+                  <select id="task-hour" name="startHour" [(ngModel)]="taskForm.startHour">
+                    @for (hour of hours; track hour) {
+                      <option [value]="hour">{{ hour }}:00</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="task-duration">{{ 'Duración (Horas)' | translate:translationService.currentLang() }}</label>
+                <select id="task-duration" name="duration" [(ngModel)]="taskForm.duration">
+                  <option [value]="1">1 {{ 'hora' | translate:translationService.currentLang() }}</option>
+                  <option [value]="2">2 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="3">3 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="4">4 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="5">5 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="6">6 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="7">7 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="8">8 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="12">12 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="16">16 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                  <option [value]="24">24 {{ 'horas' | translate:translationService.currentLang() }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- COLUMN 3: CHAT/COMMENTS (Only when editing) -->
+            @if (taskForm.id) {
+              <div class="form-column task-chat-column">
+                <h3>{{ 'Comentarios' | translate:translationService.currentLang() }}</h3>
+                
+                <!-- Messages container -->
+                <div class="chat-messages-container">
+                  @for (comment of getTaskComments(); track comment.id) {
+                    <div class="chat-message" [class.own-message]="comment.userId === timelineService.currentUserId()">
+                      <div class="chat-message-meta">
+                        <span class="chat-message-author">{{ comment.userName }}</span>
+                        <span class="chat-message-time">{{ formatCommentTime(comment.createdAt) }}</span>
+                      </div>
+                      <div class="chat-message-text">{{ comment.text }}</div>
+                    </div>
+                  } @empty {
+                    <div class="chat-empty-state">
+                      <p>{{ 'No hay comentarios aún. ¡Sé el primero!' | translate:translationService.currentLang() }}</p>
+                    </div>
+                  }
+                </div>
+
+                <!-- Input form -->
+                <div class="chat-input-row">
+                  <input type="text" 
+                         name="newCommentText" 
+                         [(ngModel)]="newCommentText" 
+                         placeholder="{{ 'Escribe un comentario...' | translate:translationService.currentLang() }}" 
+                         autocomplete="off"
+                         (keydown.enter)="$event.preventDefault(); submitComment()">
+                  <button type="button" class="btn btn-primary btn-send" (click)="submitComment()">
+                    {{ 'Comentar' | translate:translationService.currentLang() }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeTaskModal()">{{ 'Cancelar' | translate:translationService.currentLang() }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!taskForm.title.trim()">{{ 'Guardar' | translate:translationService.currentLang() }}</button>
+          </div>
+        </form>
+  </app-modal>
+
+  <!-- MODAL: CREAR USUARIO -->
+  <app-modal [title]="'Crear Usuario' | translate:translationService.currentLang()" 
+             [isOpen]="isUserModalOpen()" 
+             (close)="closeUserModal()">
+    <form (ngSubmit)="submitUserForm()">
+      <div class="form-group">
+        <label for="user-name">{{ 'Nombre Completo' | translate:translationService.currentLang() }}</label>
+        <input type="text" id="user-name" name="name" [(ngModel)]="userForm.name" placeholder="Ej. Carlos Delgado" required autocomplete="off">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeUserModal()">{{ 'Cancelar' | translate:translationService.currentLang() }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!userForm.name.trim()">{{ 'Crear' | translate:translationService.currentLang() }}</button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- FLOATING DYNAMIC TOOLTIP -->
+  @if (hoveredTask(); as task) {
+    <div class="custom-tooltip" 
+         [style.left.px]="tooltipX()" 
+         [style.top.px]="tooltipY()">
+      <div class="tooltip-title">{{ task.title }}</div>
+      <div class="tooltip-body">
+        <div class="tooltip-item">
+          <span class="tooltip-label">{{ 'Asignado a' | translate:translationService.currentLang() }}:</span>
+          <span class="tooltip-val">{{ getTaskUserName(task.userId) }}</span>
+        </div>
+        <div class="tooltip-item">
+          <span class="tooltip-label">{{ 'Fecha Inicio' | translate:translationService.currentLang() }}:</span>
+          <span class="tooltip-val">{{ getFormattedTime(task.startDate, task.duration) }}</span>
+        </div>
+        <div class="tooltip-item">
+          <span class="tooltip-label">{{ 'Duración' | translate:translationService.currentLang() }}:</span>
+          <span class="tooltip-val">{{ task.duration }} {{ (task.duration === 1 ? 'hora' : 'horas') | translate:translationService.currentLang() }}</span>
+        </div>
+        @if (task.projectId) {
+          <div class="tooltip-divider"></div>
+          <div class="tooltip-item">
+            <span class="tooltip-label">{{ 'Proyecto' | translate:translationService.currentLang() }}:</span>
+            <span class="tooltip-val" [style.color]="getProjectColor(task.projectId)">{{ getProjectName(task.projectId) }}</span>
+          </div>
+        }
+        @if (task.description) {
+          <div class="tooltip-divider"></div>
+          <div class="tooltip-desc">{{ task.description }}</div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: CREAR PROYECTO -->
+  <app-modal [title]="'Crear Proyecto' | translate:translationService.currentLang()" 
+             [isOpen]="isProjectModalOpen()" 
+             (close)="closeProjectModal()">
+    <form (ngSubmit)="submitProjectForm()">
+      <div class="form-group">
+        <label for="project-name">{{ 'Nombre del Proyecto' | translate:translationService.currentLang() }}</label>
+        <input type="text" id="project-name" name="name" [(ngModel)]="projectForm.name" placeholder="Ej. Rediseño Web" required autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label for="project-desc">{{ 'Descripción' | translate:translationService.currentLang() }}</label>
+        <textarea id="project-desc" name="description" [(ngModel)]="projectForm.description" placeholder="Añade detalles sobre este proyecto..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>{{ 'Color Identificador' | translate:translationService.currentLang() }}</label>
+        <div class="color-picker-group">
+          @for (color of projectColors; track color) {
+            <div class="color-option"
+                 [style.backgroundColor]="color"
+                 [class.active]="projectForm.color === color"
+                 (click)="projectForm.color = color">
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeProjectModal()">{{ 'Cancelar' | translate:translationService.currentLang() }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!projectForm.name.trim()">{{ 'Crear' | translate:translationService.currentLang() }}</button>
+      </div>
+    </form>
+  </app-modal>
+</div>

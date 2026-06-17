@@ -1,0 +1,72 @@
+<div class="app-container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand-section">
+      <h1>{{ 'Tablero Kanban' | translate:translationService.currentLang() }}</h1>
+      <p>{{ 'Gestión de flujo de trabajo y estados de tareas' | translate:translationService.currentLang() }}</p>
+    </div>
+  </header>
+
+  <!-- FILTERS TOOLBAR -->
+  <section class="kanban-filters-bar">
+    <div class="filter-group">
+      <label for="project-filter">{{ 'Proyecto' | translate:translationService.currentLang() }}</label>
+      <select id="project-filter" [ngModel]="selectedProjectId()" (ngModelChange)="selectedProjectId.set($event || 'all')">
+        <option value="all">{{ 'Todos los Proyectos' | translate:translationService.currentLang() }}</option>
+        @for (project of timelineService.projects(); track project.id) {
+          <option [value]="project.id">{{ project.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="user-filter">{{ 'Asignar a' | translate:translationService.currentLang() }}</label>
+      <select id="user-filter" [ngModel]="selectedUserId()" (ngModelChange)="selectedUserId.set($event || 'all')">
+        <option value="all">{{ 'Todos los Usuarios' | translate:translationService.currentLang() }}</option>
+        @for (user of timelineService.users(); track user.id) {
+          <option [value]="user.id">{{ user.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-stats" style="margin-left: auto; display: flex; align-items: center; gap: 1rem; color: #94a3b8; font-size: 0.85rem;">
+      <span>{{ filteredTasks().length }} / {{ timelineService.tasks().length }} {{ 'Tareas' | translate:translationService.currentLang() }}</span>
+    </div>
+  </section>
+
+  <!-- KANBAN BOARD CONTAINER -->
+  <main class="kanban-board">
+    @for (status of statuses; track status) {
+      <div class="kanban-column"
+           [class.drag-over]="activeDragOverColumn() === status"
+           (dragover)="onDragOver($event, status)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event, status)">
+        
+        <!-- Column Header -->
+        <div class="kanban-column-header status-{{ status.replace(' ', '-') }}">
+          <h2 class="column-title">{{ status | translate:translationService.currentLang() }}</h2>
+          <span class="task-count-badge">{{ tasksByStatus()[status].length }}</span>
+        </div>
+
+        <!-- Column Body / Cards List -->
+        <div class="kanban-column-body">
+          @if (tasksByStatus()[status].length === 0) {
+            <div class="empty-column-placeholder">
+              <p>{{ 'arrastrar aquí' | translate:translationService.currentLang() }}</p>
+            </div>
+          } @else {
+            @for (task of tasksByStatus()[status]; track task.id) {
+              <app-kanban-card [task]="task"
+                               (click)="openTaskDetail(task.id)"
+                               draggable="true"
+                               (dragstart)="onDragStart($event, task)"
+                               (dragend)="onDragEnd($event)">
+              </app-kanban-card>
+            }
+          }
+        </div>
+      </div>
+    }
+  </main>
+</div>

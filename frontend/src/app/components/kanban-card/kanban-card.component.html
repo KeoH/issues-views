@@ -1,0 +1,27 @@
+<!-- Project Tag Header -->
+@if (task().projectId) {
+  <div class="card-project-tag" [style.borderLeftColor]="getProjectColor(task().projectId)">
+    <span class="project-name-label">{{ getProjectName(task().projectId) }}</span>
+  </div>
+}
+
+<!-- Task Title & Description -->
+<h3 class="card-title" [title]="task().title">{{ task().title }}</h3>
+@if (task().description) {
+  <p class="card-desc">{{ task().description }}</p>
+}
+
+<!-- Card Footer (Assignee & Date) -->
+<div class="card-footer">
+  <div class="card-assignee">
+    <span class="assignee-avatar {{ getUserColorClass(task().userId) }}">
+      {{ getUserName(task().userId).slice(0, 2).toUpperCase() }}
+    </span>
+    <span class="assignee-name" [title]="getUserName(task().userId)">{{ getUserName(task().userId) }}</span>
+  </div>
+  
+  <div class="card-meta">
+    <span class="meta-date" title="{{ 'Fecha de Inicio' | translate:translationService.currentLang() }}">{{ getFormattedDate(task().startDate) }}</span>
+    <span class="meta-duration" title="{{ 'Duración' | translate:translationService.currentLang() }}">{{ task().duration }}h</span>
+  </div>
+</div>

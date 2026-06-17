@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1781642061829,
+      "tag": "0000_small_sleepwalker",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781646968558,
+      "tag": "0001_workable_switch",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781648668620,
+      "tag": "0002_colossal_moondragon",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1781649885722,
+      "tag": "0003_large_charles_xavier",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1781803400000,
+      "tag": "0004_translate_statuses",
+      "breakpoints": true
+    }
+  ]
+}

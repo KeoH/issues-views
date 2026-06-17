@@ -1,0 +1,305 @@
+<div class="app-container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand-section">
+      <div class="task-header-title">
+        <div class="task-project-indicator" [style.backgroundColor]="getProjectColor(task()?.projectId)"></div>
+        <div>
+          <h1>{{ 'Detalle de la Tarea' | translate:translationService.currentLang() }}</h1>
+          <p>{{ 'Gestión y planificación de la tarea' | translate:translationService.currentLang() }} <strong>{{ task()?.title }}</strong></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- DETAIL GRID -->
+  <div class="task-detail-grid">
+    <!-- LEFT COLUMN: DETAIL FORM & DEPENDENCIES -->
+    <div class="task-main-column">
+      <!-- EDIT FORM CARD -->
+      <aside class="detail-card">
+        <h2>{{ 'Información de la Tarea' | translate:translationService.currentLang() }}</h2>
+        <form (ngSubmit)="saveTask()" class="detail-form">
+          <div class="form-group">
+            <label for="task-title">{{ 'Título de la Tarea' | translate:translationService.currentLang() }}</label>
+            <input type="text" id="task-title" name="title" [(ngModel)]="taskForm.title" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label for="task-desc">{{ 'Descripción' | translate:translationService.currentLang() }}</label>
+            <textarea id="task-desc" name="description" [(ngModel)]="taskForm.description" [placeholder]="'Añadir descripción o especificación de la tarea...' | translate:translationService.currentLang()" style="min-height: 100px;"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-project">{{ 'Proyecto' | translate:translationService.currentLang() }}</label>
+              <select id="task-project" name="projectId" [(ngModel)]="taskForm.projectId">
+                <option value="">{{ 'Sin Proyecto' | translate:translationService.currentLang() }}</option>
+                @for (p of timelineService.projects(); track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="task-user">{{ 'Responsable' | translate:translationService.currentLang() }}</label>
+              <select id="task-user" name="userId" [(ngModel)]="taskForm.userId" required>
+                @for (usr of assignableUsers(); track usr.id) {
+                  <option [value]="usr.id">{{ usr.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-date">{{ 'Fecha de Inicio' | translate:translationService.currentLang() }}</label>
+              <input type="date" id="task-date" name="startDate" [(ngModel)]="taskForm.startDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="task-hour">{{ 'Hora de Inicio' | translate:translationService.currentLang() }}</label>
+              <select id="task-hour" name="startHour" [(ngModel)]="taskForm.startHour" required>
+                @for (h of hours; track h) {
+                  <option [value]="h">{{ h }}:00</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-duration">{{ 'Duración (Horas)' | translate:translationService.currentLang() }}</label>
+              <select id="task-duration" name="duration" [(ngModel)]="taskForm.duration" required>
+                <option [value]="1">{{ '1 hora' | translate:translationService.currentLang() }}</option>
+                <option [value]="2">{{ '2 horas' | translate:translationService.currentLang() }}</option>
+                <option [value]="3">{{ '3 horas' | translate:translationService.currentLang() }}</option>
+                <option [value]="4">{{ '4 horas (Media jornada)' | translate:translationService.currentLang() }}</option>
+                <option [value]="5">{{ '5 horas' | translate:translationService.currentLang() }}</option>
+                <option [value]="6">{{ '6 horas' | translate:translationService.currentLang() }}</option>
+                <option [value]="7">{{ '7 horas' | translate:translationService.currentLang() }}</option>
+                <option [value]="8">{{ '8 horas (Jornada completa)' | translate:translationService.currentLang() }}</option>
+                <option [value]="12">{{ '12 horas (1.5 días)' | translate:translationService.currentLang() }}</option>
+                <option [value]="16">{{ '16 horas (2 días)' | translate:translationService.currentLang() }}</option>
+                <option [value]="24">{{ '24 horas (3 días)' | translate:translationService.currentLang() }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="task-status">{{ 'Estado' | translate:translationService.currentLang() }}</label>
+              <select id="task-status" name="status" [(ngModel)]="taskForm.status" required>
+                <option value="Created">{{ 'Created' | translate:translationService.currentLang() }}</option>
+                <option value="In Progress">{{ 'In Progress' | translate:translationService.currentLang() }}</option>
+                <option value="Completed">{{ 'Completed' | translate:translationService.currentLang() }}</option>
+                <option value="Cancelled">{{ 'Cancelled' | translate:translationService.currentLang() }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="detail-actions">
+            <button type="submit" class="btn btn-primary btn-save" [disabled]="!taskForm.title.trim()">
+              {{ 'Guardar Cambios' | translate:translationService.currentLang() }}
+            </button>
+            <button type="button" class="btn btn-danger btn-delete" (click)="deleteTask()">
+              {{ 'Eliminar Tarea' | translate:translationService.currentLang() }}
+            </button>
+          </div>
+        </form>
+      </aside>
+
+      <!-- DEPENDENCY MANAGEMENT -->
+      <section class="detail-card">
+        <h2>{{ 'Dependencias (Predecesoras)' | translate:translationService.currentLang() }}</h2>
+        <p class="settings-help">{{ 'Especifica qué tareas deben terminar antes de que esta pueda comenzar.' | translate:translationService.currentLang() }}</p>
+
+        <!-- SEARCH INPUT & ACCORDING BADGES -->
+        <div class="form-group dependency-search-container">
+          <label>{{ 'Añadir Dependencia Predecesora' | translate:translationService.currentLang() }}</label>
+          <div class="autocomplete-search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" 
+                   [ngModel]="depSearchQuery()" 
+                   (ngModelChange)="depSearchQuery.set($event)"
+                   (focus)="toggleDepDropdown(true)"
+                   (blur)="toggleDepDropdown(false)"
+                   [placeholder]="'Buscar tarea por título o responsable...' | translate:translationService.currentLang()"
+                   autocomplete="off"
+                   class="autocomplete-input">
+            
+            @if (isDepDropdownOpen()) {
+              <div class="autocomplete-dropdown">
+                @if (getFilteredPredecessors().length > 0) {
+                  @for (eligibleTask of getFilteredPredecessors(); track eligibleTask.id) {
+                    <div class="autocomplete-item" (mousedown)="addDependency(eligibleTask.id)">
+                      <div class="autocomplete-item-main">
+                        <span class="item-title">{{ eligibleTask.title }}</span>
+                        <span class="task-status-badge status-{{ eligibleTask.status.replace(' ', '-') }}">
+                          {{ eligibleTask.status | translate:translationService.currentLang() }}
+                        </span>
+                      </div>
+                      <div class="autocomplete-item-meta">
+                        <span class="meta-project-tag" [style.borderColor]="getProjectColor(eligibleTask.projectId)" [style.backgroundColor]="getProjectColor(eligibleTask.projectId) + '15'" [style.color]="getProjectColor(eligibleTask.projectId)">
+                          {{ getProjectName(eligibleTask.projectId) | translate:translationService.currentLang() }}
+                        </span>
+                        <span class="meta-separator">•</span>
+                        <span class="meta-user">
+                          <span class="meta-user-icon">👤</span>
+                          {{ getUserName(eligibleTask.userId) | translate:translationService.currentLang() }}
+                        </span>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <div class="autocomplete-no-results">
+                    {{ 'No se encontraron tareas' | translate:translationService.currentLang() }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Selected badges -->
+          @if (taskForm.dependencies.length > 0) {
+            <div class="selected-dependencies-badges">
+              @for (depId of taskForm.dependencies; track depId) {
+                <div class="selected-dep-badge">
+                  <span class="dep-badge-text">{{ getTaskTitle(depId) }}</span>
+                  <button type="button" class="btn-remove-dep touch-target-expand" (click)="removeDependency(depId)" [title]="'Quitar dependencia' | translate:translationService.currentLang()">×</button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- LIST OF CURRENT PREDECESSORS -->
+        <div class="predecessors-list">
+          @if (predecessorTasks().length === 0) {
+            <div class="empty-list-notice">{{ 'Esta tarea no tiene dependencias predecesoras asociadas.' | translate:translationService.currentLang() }}</div>
+          } @else {
+            <div class="dep-grid-list">
+              @for (pTask of predecessorTasks(); track pTask.id) {
+                <a [routerLink]="['/tarea', pTask.id]" class="dep-item-card" [style.borderLeftColor]="getProjectColor(pTask.projectId)">
+                  <div class="dep-item-info">
+                    <span class="dep-item-title">{{ pTask.title }}</span>
+                    <span class="dep-item-schedule">{{ getFormattedDateRange(pTask.startDate, pTask.duration) }}</span>
+                  </div>
+                  <div class="dep-item-meta">
+                    <span class="dep-item-user">{{ getUserName(pTask.userId) | translate:translationService.currentLang() }}</span>
+                    <span class="task-status-badge status-{{ pTask.status.replace(' ', '-') }}">{{ pTask.status | translate:translationService.currentLang() }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- SUCCESSORS LIST -->
+      <section class="detail-card">
+        <h2>{{ 'Tareas que dependen de esta' | translate:translationService.currentLang() }}</h2>
+        <p class="settings-help">{{ 'Tareas que dependen de la finalización de esta tarea (bloqueadas).' | translate:translationService.currentLang() }}</p>
+        
+        <div class="successors-list">
+          @if (successorTasks().length === 0) {
+            <div class="empty-list-notice">{{ 'Ninguna otra tarea depende de esta.' | translate:translationService.currentLang() }}</div>
+          } @else {
+            <div class="dep-grid-list">
+              @for (sTask of successorTasks(); track sTask.id) {
+                <a [routerLink]="['/tarea', sTask.id]" class="dep-item-card" [style.borderLeftColor]="getProjectColor(sTask.projectId)">
+                  <div class="dep-item-info">
+                    <span class="dep-item-title">{{ sTask.title }}</span>
+                    <span class="dep-item-schedule">{{ getFormattedDateRange(sTask.startDate, sTask.duration) }}</span>
+                  </div>
+                  <div class="dep-item-meta">
+                    <span class="dep-item-user">{{ getUserName(sTask.userId) | translate:translationService.currentLang() }}</span>
+                    <span class="task-status-badge status-{{ sTask.status.replace(' ', '-') }}">{{ sTask.status | translate:translationService.currentLang() }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT COLUMN: COMMENTS & FILES -->
+    <div class="task-right-column">
+      <!-- COMMENTS CHAT CARD -->
+      <main class="task-chat-card" style="margin-bottom: 0;">
+        <h2>{{ 'Comentarios' | translate:translationService.currentLang() }}</h2>
+        <p class="settings-help">{{ 'Deja tus notas o actualizaciones sobre el estado de la tarea.' | translate:translationService.currentLang() }}</p>
+
+        <div class="chat-messages-container">
+          @if (!task()?.comments || task()?.comments?.length === 0) {
+            <div class="empty-chat-notice">{{ 'No hay comentarios aún. ¡Sé el primero!' | translate:translationService.currentLang() }}</div>
+          } @else {
+            @for (comment of task()?.comments; track comment.id) {
+              <div class="chat-message" 
+                   [class.own-message]="comment.userId === timelineService.currentUserId()">
+                <div class="message-header">
+                  <span class="message-author" [class.admin-author]="comment.userId === 'admin'">
+                    {{ comment.userName === 'Administrador' ? ('Administrador' | translate:translationService.currentLang()) : comment.userName }}
+                  </span>
+                  <span class="message-time">{{ formatCommentTime(comment.createdAt) }}</span>
+                </div>
+                <p class="message-text">{{ comment.text }}</p>
+              </div>
+            }
+          }
+        </div>
+
+        <form (ngSubmit)="submitComment()" class="chat-input-row">
+          <input type="text" 
+                 name="newComment" 
+                 [(ngModel)]="newCommentText" 
+                 [placeholder]="'Escribe un comentario...' | translate:translationService.currentLang()" 
+                 required 
+                 autocomplete="off">
+          <button type="submit" class="btn btn-primary btn-send" [disabled]="!newCommentText.trim()">
+            {{ 'Enviar' | translate:translationService.currentLang() }}
+          </button>
+        </form>
+      </main>
+
+      <!-- FILES ATTACHMENTS CARD (R2) -->
+      <section class="task-files-card">
+        <h2>{{ 'Archivos Adjuntos (R2)' | translate:translationService.currentLang() }}</h2>
+        <p class="settings-help">{{ 'Archivos de especificaciones y entregables subidos a la tarea en R2.' | translate:translationService.currentLang() }}</p>
+
+        @if (!task()?.files || task()?.files?.length === 0) {
+          <div class="empty-files">{{ 'No hay archivos adjuntos.' | translate:translationService.currentLang() }}</div>
+        } @else {
+          <div class="file-list">
+            @for (file of task()?.files; track file.id) {
+              <div class="file-item">
+                <a [href]="file.url" target="_blank" class="file-info" [title]="'Descargar' | translate:translationService.currentLang()">
+                  <span class="file-icon" aria-hidden="true">{{ getFileIcon(file.type) }}</span>
+                  <div class="file-details">
+                    <span class="file-name">{{ file.name }}</span>
+                    <span class="file-meta">{{ formatBytes(file.size) }} • {{ 'Descargar' | translate:translationService.currentLang() }}</span>
+                  </div>
+                </a>
+                <button class="btn-delete-file touch-target-expand" (click)="deleteFile(file.id)" [title]="'Eliminar archivo' | translate:translationService.currentLang()">
+                  🗑️
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Upload Trigger Zone -->
+        <div class="upload-zone" (click)="fileInput.click()">
+          <span class="upload-icon" aria-hidden="true">📤</span>
+          <p>{{ 'Hacer clic para subir un archivo' | translate:translationService.currentLang() }}</p>
+          <p class="upload-hint">{{ 'Subida directa a Cloudflare R2' | translate:translationService.currentLang() }}</p>
+          <input 
+            #fileInput 
+            type="file" 
+            style="display: none;" 
+            (change)="onFileSelected($event)"
+          />
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,37 @@
+{
+  "name": "timeline-scheduler-backend",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "timeline-db",
+      "database_id": "timeline-db",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "timeline-files"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "QUEUE",
+        "queue": "timeline-notifications"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "timeline-notifications",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5
+      }
+    ]
+  },
+  "assets": {
+    "directory": "../frontend/dist/timeline-mvp/browser"
+  }
+}
